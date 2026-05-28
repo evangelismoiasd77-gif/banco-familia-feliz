@@ -58,14 +58,13 @@
       font-weight: bold;
       letter-spacing: 1px;
     }
-    .loading { color: #555; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="header">Banco Família Feliz</div>
     <div class="saldo-label">SALDO DISPONÍVEL</div>
-    <div class="saldo-box loading" id="saldo">Carregando...</div>
+    <div class="saldo-box" id="saldo" style="color:#555">Carregando...</div>
     <div class="id-box" id="idbox"></div>
     <div class="footer">Evangelismo Escola</div>
   </div>
@@ -75,18 +74,19 @@
     const id = params.get("id") || "";
     document.getElementById("idbox").textContent = id ? "ID: " + id : "";
 
-    fetch("https://script.google.com/macros/s/AKfycbydZbZlDPisBvdMvcZmmpfbDqB-O6NFzNE6mQFIEOiZ1aC43HRs_yvHFdRisdOVMANz/exec?id=" + id)
-      .then(r => r.text())
-      .then(html => {
-        const match = html.match(/class="saldo-box[^"]*"[^>]*>(.*?)<\/div>/s);
-        const saldo = match ? match[1].trim() : "Erro";
+    const url = "https://script.google.com/macros/s/AKfycbydZbZlDPisBvdMvcZmmpfbDqB-O6NFzNE6mQFIEOiZ1aC43HRs_yvHFdRisdOVMANz/exec?id=" + encodeURIComponent(id);
+
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
         const el = document.getElementById("saldo");
-        el.textContent = saldo;
-        el.style.color = saldo.includes("R$") ? "#00e676" : "#ef5350";
+        el.textContent = data.saldo;
+        el.style.color = data.encontrado ? "#00e676" : "#ef5350";
       })
       .catch(() => {
-        document.getElementById("saldo").textContent = "Erro";
-        document.getElementById("saldo").style.color = "#ef5350";
+        const el = document.getElementById("saldo");
+        el.textContent = "Erro";
+        el.style.color = "#ef5350";
       });
   </script>
 </body>
