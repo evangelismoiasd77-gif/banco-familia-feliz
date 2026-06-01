@@ -87,36 +87,31 @@
   <div class="card">
     <div class="header">Evangelismo Escola</div>
     <div class="sub">SORTEIO DO DIA</div>
-    <div class="nome-box" id="nome">Pressione sortear!</div>
-    <div class="total-box" id="total">Carregando presentes...</div>
+    <div class="nome-box" id="nome">Carregando...</div>
+    <div class="total-box" id="total"></div>
     <div class="footer">Banco Família Feliz</div>
   </div>
   <button class="btn" id="btn" onclick="sortear()" disabled>Carregando...</button>
 
   <script>
-    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwcP5kPLPMu97Vik5UiAXemWZaZb1pKavfqRY9Axc76jUh_YSlkNuuZuQh6tCu8sK82/exec?acao=sorteio";
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwcP5kPLPMu97Vik5UiAXemWZaZb1pKavfqRY9Axc76jUh_YSlkNuuZuQh6tCu8sK82/exec?acao=sorteio&callback=receberDados";
     let presentes = [];
     let intervalo = null;
 
-    fetch(URL_SCRIPT)
-      .then(r => r.json())
-      .then(data => {
-        presentes = data.presentes;
-        const btn = document.getElementById("btn");
-        const total = document.getElementById("total");
-        if (presentes.length === 0) {
-          document.getElementById("nome").textContent = "Nenhum presente hoje";
-          total.textContent = "0 presentes";
-        } else {
-          total.textContent = presentes.length + " presente(s) hoje";
-          btn.textContent = "SORTEAR";
-          btn.disabled = false;
-        }
-      })
-      .catch(() => {
-        document.getElementById("nome").textContent = "Erro ao carregar";
-        document.getElementById("total").textContent = "";
-      });
+    function receberDados(data) {
+      presentes = data.presentes;
+      const btn = document.getElementById("btn");
+      const total = document.getElementById("total");
+      if (presentes.length === 0) {
+        document.getElementById("nome").textContent = "Nenhum presente hoje";
+        total.textContent = "0 presentes";
+      } else {
+        document.getElementById("nome").textContent = "Pressione sortear!";
+        total.textContent = presentes.length + " presente(s) hoje";
+        btn.textContent = "SORTEAR";
+        btn.disabled = false;
+      }
+    }
 
     function sortear() {
       if (presentes.length === 0) return;
@@ -140,6 +135,11 @@
         }
       }, 80);
     }
+
+    // Carrega via JSONP
+    var script = document.createElement("script");
+    script.src = URL_SCRIPT;
+    document.head.appendChild(script);
   </script>
 </body>
 </html>
