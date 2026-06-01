@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sorteio - Evangelismo Escola</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .card {
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    .header {
+      background: #000;
+      color: #00bcd4;
+      padding: 24px 20px 8px;
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .sub {
+      color: #555;
+      font-size: 13px;
+      padding-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .nome-box {
+      color: #ffd600;
+      padding: 24px 16px;
+      font-size: 36px;
+      font-weight: bold;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .total-box {
+      color: #444;
+      font-size: 13px;
+      padding-bottom: 16px;
+    }
+    .footer {
+      background: #0d47a1;
+      color: white;
+      padding: 18px;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .btn {
+      background: #00bcd4;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 48px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #00e5ff; }
+    .btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+    @keyframes rolando {
+      0% { opacity: 0.3; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 0.3; transform: scale(0.95); }
+    }
+    .animando { animation: rolando 0.15s infinite; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">Evangelismo Escola</div>
+    <div class="sub">SORTEIO DO DIA</div>
+    <div class="nome-box" id="nome">Pressione sortear!</div>
+    <div class="total-box" id="total">Carregando presentes...</div>
+    <div class="footer">Banco Família Feliz</div>
+  </div>
+  <button class="btn" id="btn" onclick="sortear()" disabled>Carregando...</button>
+
+  <script>
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxKNRBZIkWQ1YiBGCdQR4Is77V8pRCzlX6Q1-R76xtog26Vdat50niGBs48b07AyxN-/exec";
+    let presentes = [];
+    let intervalo = null;
+
+    fetch(URL_SCRIPT)
+      .then(r => r.json())
+      .then(data => {
+        presentes = data.presentes;
+        const btn = document.getElementById("btn");
+        const total = document.getElementById("total");
+        if (presentes.length === 0) {
+          document.getElementById("nome").textContent = "Nenhum presente hoje";
+          total.textContent = "0 presentes";
+        } else {
+          total.textContent = presentes.length + " presente(s) hoje";
+          btn.textContent = "SORTEAR";
+          btn.disabled = false;
+        }
+      })
+      .catch(() => {
+        document.getElementById("nome").textContent = "Erro ao carregar";
+        document.getElementById("total").textContent = "";
+      });
+
+    function sortear() {
+      if (presentes.length === 0) return;
+      const btn = document.getElementById("btn");
+      const nomeEl = document.getElementById("nome");
+      btn.disabled = true;
+      nomeEl.classList.add("animando");
+
+      let contador = 0;
+      const total = 30;
+      intervalo = setInterval(() => {
+        const idx = Math.floor(Math.random() * presentes.length);
+        nomeEl.textContent = presentes[idx];
+        contador++;
+        if (contador >= total) {
+          clearInterval(intervalo);
+          nomeEl.classList.remove("animando");
+          nomeEl.style.color = "#00e676";
+          btn.textContent = "SORTEAR NOVAMENTE";
+          btn.disabled = false;
+        }
+      }, 80);
+    }
+  </script>
+</body>
+</html>
