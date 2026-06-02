@@ -74,7 +74,7 @@
     const id = params.get("id") || "";
     document.getElementById("idbox").textContent = id ? "ID: " + id : "";
 
-    const url = "https://script.google.com/macros/s/AKfycbwcP5kPLPMu97Vik5UiAXemWZaZb1pKavfqRY9Axc76jUh_YSlkNuuZuQh6tCu8sK82/exec?id=" + encodeURIComponent(id);
+    const url = "https://script.google.com/macros/s/AKfycbz3TuVvyJqUEGcbIPKaIpU_yLs-xdppeCVPxCUoh3OIBBqLTUlszWV-4UKw2nj8KlHP/exec?id=" + encodeURIComponent(id);
 
     fetch(url)
       .then(r => r.json())
