@@ -13,9 +13,13 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      flex-direction: column;
-      gap: 20px;
+      flex-direction: row;
+      gap: 32px;
+      flex-wrap: wrap;
+      padding: 32px 16px;
     }
+
+    /* ── CARD SORTEIO ── */
     .card {
       background: #000;
       border-radius: 20px;
@@ -23,6 +27,7 @@
       width: 320px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       text-align: center;
+      flex-shrink: 0;
     }
     .header {
       background: #000;
@@ -61,6 +66,13 @@
       font-weight: bold;
       letter-spacing: 1px;
     }
+    .btn-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
     .btn {
       background: #00bcd4;
       color: #000;
@@ -75,69 +87,279 @@
     }
     .btn:hover { background: #00e5ff; }
     .btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    .btn-reset {
+      background: transparent;
+      color: #555;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 8px 24px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-reset:hover { background: #1a1a2e; color: #aaa; border-color: #555; }
+
+    /* ── PAINEL VENCEDORES ── */
+    .vencedores-panel {
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      width: 280px;
+      min-height: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .vencedores-header {
+      background: #0d47a1;
+      color: #fff;
+      padding: 16px 20px;
+      font-size: 15px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      font-weight: bold;
+    }
+    .vencedores-sub {
+      color: #555;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 6px 0 4px;
+      border-bottom: 1px solid #111;
+    }
+    .vencedores-lista {
+      list-style: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .vencedores-lista::-webkit-scrollbar { width: 4px; }
+    .vencedores-lista::-webkit-scrollbar-track { background: #111; }
+    .vencedores-lista::-webkit-scrollbar-thumb { background: #0d47a1; border-radius: 2px; }
+    .vencedores-lista li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #111;
+      animation: entrar 0.35s ease;
+    }
+    .vencedores-lista li:last-child { border-bottom: none; }
+    .num-badge {
+      background: #0d47a1;
+      color: #fff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .venc-nome {
+      color: #00e676;
+      font-size: 15px;
+      font-weight: bold;
+    }
+    .vencedores-empty {
+      color: #333;
+      font-size: 13px;
+      text-align: center;
+      padding: 32px 16px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vencedores-footer {
+      background: #111;
+      color: #555;
+      font-size: 12px;
+      text-align: center;
+      padding: 10px;
+      border-top: 1px solid #1a1a2e;
+    }
+
     @keyframes rolando {
-      0% { opacity: 0.3; transform: scale(0.95); }
-      50% { opacity: 1; transform: scale(1.05); }
+      0%   { opacity: 0.3; transform: scale(0.95); }
+      50%  { opacity: 1;   transform: scale(1.05); }
       100% { opacity: 0.3; transform: scale(0.95); }
     }
     .animando { animation: rolando 0.15s infinite; }
+
+    @keyframes entrar {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">Evangelismo Escola</div>
-    <div class="sub">SORTEIO DO DIA</div>
-    <div class="nome-box" id="nome">Carregando...</div>
-    <div class="total-box" id="total"></div>
-    <div class="footer">Banco Família Feliz</div>
+
+  <!-- CARD SORTEIO -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <div class="card">
+      <div class="header">Evangelismo Escola</div>
+      <div class="sub">SORTEIO DO DIA</div>
+      <div class="nome-box" id="nome">Carregando...</div>
+      <div class="total-box" id="total"></div>
+      <div class="footer">Banco Família Feliz</div>
+    </div>
+    <div class="btn-wrap">
+      <button class="btn" id="btn" onclick="sortear()" disabled>Carregando...</button>
+      <button class="btn-reset" onclick="resetarSorteio()">↺ Reiniciar sorteio</button>
+    </div>
   </div>
-  <button class="btn" id="btn" onclick="sortear()" disabled>Carregando...</button>
+
+  <!-- PAINEL VENCEDORES -->
+  <div class="vencedores-panel">
+    <div class="vencedores-header">🏆 Vencedores</div>
+    <div class="vencedores-sub" id="venc-sub">Nenhum sorteado ainda</div>
+    <div id="venc-corpo" style="flex:1;display:flex;flex-direction:column;">
+      <div class="vencedores-empty" id="venc-empty">Os sorteados aparecerão aqui</div>
+      <ul class="vencedores-lista" id="venc-lista" style="display:none;"></ul>
+    </div>
+    <div class="vencedores-footer" id="venc-footer">0 / 0 sorteados</div>
+  </div>
 
   <script>
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbz3TuVvyJqUEGcbIPKaIpU_yLs-xdppeCVPxCUoh3OIBBqLTUlszWV-4UKw2nj8KlHP/exec?acao=sorteio&callback=receberDados";
-    let presentes = [];
-    let intervalo = null;
 
+    let todosPresentes = [];   // lista completa recebida da planilha
+    let disponiveis   = [];   // quem ainda pode ser sorteado
+    let vencedores    = [];   // quem já foi sorteado
+    let intervalo     = null;
+
+    /* ── Recebe dados da planilha (JSONP) ── */
     function receberDados(data) {
-      presentes = data.presentes;
-      const btn = document.getElementById("btn");
-      const total = document.getElementById("total");
-      if (presentes.length === 0) {
-        document.getElementById("nome").textContent = "Nenhum presente hoje";
-        total.textContent = "0 presentes";
-        btn.textContent = "SORTEAR";
-      } else {
-        document.getElementById("nome").textContent = "Pressione sortear!";
-        total.textContent = presentes.length + " presente(s) hoje";
-        btn.textContent = "SORTEAR";
-        btn.disabled = false;
-      }
+      // Remove duplicatas que porventura venham da planilha
+      todosPresentes = [...new Set(data.presentes.map(n => String(n).trim()).filter(Boolean))];
+      disponiveis    = [...todosPresentes];
+
+      atualizarUI();
     }
 
+    /* ── Atualiza a interface principal ── */
+    function atualizarUI() {
+      const btn   = document.getElementById("btn");
+      const total = document.getElementById("total");
+      const nome  = document.getElementById("nome");
+
+      if (todosPresentes.length === 0) {
+        nome.textContent  = "Nenhum presente hoje";
+        total.textContent = "0 presentes";
+        btn.textContent   = "SORTEAR";
+        btn.disabled      = true;
+      } else if (disponiveis.length === 0) {
+        nome.textContent  = "Todos já foram sorteados!";
+        total.textContent = todosPresentes.length + " presente(s) hoje";
+        btn.textContent   = "SORTEAR";
+        btn.disabled      = true;
+      } else {
+        if (vencedores.length === 0) nome.textContent = "Pressione sortear!";
+        total.textContent = disponiveis.length + " disponível(is) · " + todosPresentes.length + " presente(s)";
+        btn.textContent   = vencedores.length === 0 ? "SORTEAR" : "SORTEAR NOVAMENTE";
+        btn.disabled      = false;
+        nome.style.color  = "#ffd600";
+      }
+
+      atualizarPainelVencedores();
+    }
+
+    /* ── Realiza o sorteio ── */
     function sortear() {
-      if (presentes.length === 0) return;
-      const btn = document.getElementById("btn");
+      if (disponiveis.length === 0) return;
+
+      const btn   = document.getElementById("btn");
       const nomeEl = document.getElementById("nome");
+
       btn.disabled = true;
+      nomeEl.style.color = "#ffd600";
       nomeEl.classList.add("animando");
 
       let contador = 0;
-      const total = 30;
+      const totalTicks = 30;
+
       intervalo = setInterval(() => {
-        const idx = Math.floor(Math.random() * presentes.length);
-        nomeEl.textContent = presentes[idx];
+        // Mostra nomes aleatórios durante a animação (apenas dos disponíveis)
+        const idx = Math.floor(Math.random() * disponiveis.length);
+        nomeEl.textContent = disponiveis[idx];
         contador++;
-        if (contador >= total) {
+
+        if (contador >= totalTicks) {
           clearInterval(intervalo);
           nomeEl.classList.remove("animando");
+
+          // Escolhe o vencedor final
+          const vencIdx = Math.floor(Math.random() * disponiveis.length);
+          const vencedor = disponiveis[vencIdx];
+
+          // Remove da lista de disponíveis
+          disponiveis.splice(vencIdx, 1);
+
+          // Adiciona à lista de vencedores
+          vencedores.push(vencedor);
+
+          // Exibe o nome sorteado
+          nomeEl.textContent = vencedor;
           nomeEl.style.color = "#00e676";
-          btn.textContent = "SORTEAR NOVAMENTE";
-          btn.disabled = false;
+
+          atualizarUI();
         }
       }, 80);
     }
 
-    // Carrega via JSONP
+    /* ── Reinicia o sorteio (mantém a lista da planilha) ── */
+    function resetarSorteio() {
+      if (!confirm("Reiniciar o sorteio? Os vencedores serão apagados.")) return;
+      disponiveis = [...todosPresentes];
+      vencedores  = [];
+      const nomeEl = document.getElementById("nome");
+      nomeEl.textContent = "Pressione sortear!";
+      nomeEl.style.color = "#ffd600";
+      atualizarUI();
+    }
+
+    /* ── Atualiza painel lateral de vencedores ── */
+    function atualizarPainelVencedores() {
+      const lista   = document.getElementById("venc-lista");
+      const empty   = document.getElementById("venc-empty");
+      const sub     = document.getElementById("venc-sub");
+      const footer  = document.getElementById("venc-footer");
+
+      footer.textContent = vencedores.length + " / " + todosPresentes.length + " sorteados";
+
+      if (vencedores.length === 0) {
+        empty.style.display  = "flex";
+        lista.style.display  = "none";
+        sub.textContent      = "Nenhum sorteado ainda";
+        return;
+      }
+
+      empty.style.display = "none";
+      lista.style.display = "block";
+      sub.textContent     = vencedores.length === 1
+        ? "1 pessoa sorteada"
+        : vencedores.length + " pessoas sorteadas";
+
+      // Reconstrói a lista (mais recente no topo)
+      lista.innerHTML = "";
+      const ordenados = [...vencedores].reverse();
+      ordenados.forEach((nome, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span class="num-badge">${vencedores.length - i}</span>
+          <span class="venc-nome">${nome}</span>
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    // ── Carrega via JSONP ──
     var script = document.createElement("script");
     script.src = URL_SCRIPT;
     document.head.appendChild(script);
