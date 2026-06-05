@@ -19,7 +19,6 @@
       padding: 32px 16px;
     }
 
-    /* ── CARD SORTEIO ── */
     .card {
       background: #000;
       border-radius: 20px;
@@ -87,7 +86,6 @@
     }
     .btn:hover { background: #00e5ff; }
     .btn:disabled { background: #333; color: #666; cursor: not-allowed; }
-
     .btn-reset {
       background: transparent;
       color: #555;
@@ -99,6 +97,83 @@
       transition: all 0.2s;
     }
     .btn-reset:hover { background: #1a1a2e; color: #aaa; border-color: #555; }
+
+    /* ── FILTRO DE HORÁRIO ── */
+    .filtro-panel {
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+    .filtro-header {
+      background: #0d47a1;
+      color: #fff;
+      padding: 16px 20px;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      font-weight: bold;
+    }
+    .filtro-botoes {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 16px;
+    }
+    .btn-filtro {
+      background: #111;
+      color: #aaa;
+      border: 1px solid #222;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-filtro:hover { background: #1a1a2e; border-color: #00bcd4; color: #fff; }
+    .btn-filtro.ativo {
+      background: #0d47a1;
+      border-color: #00bcd4;
+      color: #fff;
+    }
+    .btn-filtro .count {
+      background: #00bcd4;
+      color: #000;
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .btn-filtro.ativo .count { background: #fff; color: #0d47a1; }
+    .btn-filtro-todos {
+      background: #111;
+      color: #00bcd4;
+      border: 1px solid #00bcd4;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      margin: 0 16px 16px;
+    }
+    .btn-filtro-todos:hover { background: #00bcd4; color: #000; }
+    .btn-filtro-todos.ativo { background: #00bcd4; color: #000; }
+    .filtro-info {
+      color: #444;
+      font-size: 12px;
+      text-align: center;
+      padding: 0 16px 16px;
+    }
 
     /* ── PAINEL VENCEDORES ── */
     .vencedores-panel {
@@ -161,11 +236,7 @@
       font-weight: bold;
       flex-shrink: 0;
     }
-    .venc-nome {
-      color: #00e676;
-      font-size: 15px;
-      font-weight: bold;
-    }
+    .venc-nome { color: #00e676; font-size: 15px; font-weight: bold; }
     .vencedores-empty {
       color: #333;
       font-size: 13px;
@@ -215,6 +286,31 @@
     </div>
   </div>
 
+  <!-- FILTRO DE HORÁRIO -->
+  <div style="display:flex;flex-direction:column;gap:16px;align-items:center;">
+    <div class="filtro-panel">
+      <div class="filtro-header">Filtro de presença por horário</div>
+      <div class="filtro-botoes">
+        <button class="btn-filtro" id="filtro-1" onclick="aplicarFiltro(1)">
+          <span>🕖 19h00 – 19h30</span>
+          <span class="count" id="count-1">0</span>
+        </button>
+        <button class="btn-filtro" id="filtro-2" onclick="aplicarFiltro(2)">
+          <span>🕖 19h30 – 20h00</span>
+          <span class="count" id="count-2">0</span>
+        </button>
+        <button class="btn-filtro" id="filtro-3" onclick="aplicarFiltro(3)">
+          <span>🕗 20h00 – 20h30</span>
+          <span class="count" id="count-3">0</span>
+        </button>
+      </div>
+      <button class="btn-filtro-todos" id="filtro-todos" onclick="aplicarFiltro(0)">
+        Todos os presentes
+      </button>
+      <div class="filtro-info" id="filtro-info">Nenhum filtro aplicado</div>
+    </div>
+  </div>
+
   <!-- PAINEL VENCEDORES -->
   <div class="vencedores-panel">
     <div class="vencedores-header">🏆 Vencedores</div>
@@ -229,52 +325,99 @@
   <script>
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbz3TuVvyJqUEGcbIPKaIpU_yLs-xdppeCVPxCUoh3OIBBqLTUlszWV-4UKw2nj8KlHP/exec?acao=sorteio&callback=receberDados";
 
-    let todosPresentes = [];   // lista completa recebida da planilha
-    let disponiveis   = [];   // quem ainda pode ser sorteado
-    let vencedores    = [];   // quem já foi sorteado
-    let intervalo     = null;
+    let todosDados     = []; // [{nome, hora}]
+    let disponiveis    = [];
+    let vencedores     = [];
+    let filtroAtivo    = 0;
+    let intervalo      = null;
 
-    /* ── Recebe dados da planilha (JSONP) ── */
+    const FAIXAS = [
+      null,
+      { label: "19h00 – 19h30", hIni: 19, mIni: 0,  hFim: 19, mFim: 30 },
+      { label: "19h30 – 20h00", hIni: 19, mIni: 30, hFim: 20, mFim: 0  },
+      { label: "20h00 – 20h30", hIni: 20, mIni: 0,  hFim: 20, mFim: 30 },
+    ];
+
     function receberDados(data) {
-      // Remove duplicatas que porventura venham da planilha
-      todosPresentes = [...new Set(data.presentes.map(n => String(n).trim()).filter(Boolean))];
-      disponiveis    = [...todosPresentes];
+      todosDados = data.presentes.map(p => {
+        if (typeof p === "object") return { nome: String(p.nome).trim(), hora: p.hora || "" };
+        return { nome: String(p).trim(), hora: "" };
+      }).filter(p => p.nome);
+
+      atualizarContadores();
+      aplicarFiltro(0);
+    }
+
+    function dentroDaFaixa(horaStr, faixa) {
+      if (!horaStr) return false;
+      const partes = String(horaStr).split(":");
+      if (partes.length < 2) return false;
+      const h = parseInt(partes[0]);
+      const m = parseInt(partes[1]);
+      const totalMin = h * 60 + m;
+      const iniMin   = faixa.hIni * 60 + faixa.mIni;
+      const fimMin   = faixa.hFim * 60 + faixa.mFim;
+      return totalMin >= iniMin && totalMin < fimMin;
+    }
+
+    function atualizarContadores() {
+      for (let i = 1; i <= 3; i++) {
+        const c = todosDados.filter(p => dentroDaFaixa(p.hora, FAIXAS[i])).length;
+        document.getElementById("count-" + i).textContent = c;
+      }
+    }
+
+    function aplicarFiltro(num) {
+      filtroAtivo = num;
+      vencedores  = [];
+
+      // Atualiza botões
+      document.getElementById("filtro-todos").classList.toggle("ativo", num === 0);
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById("filtro-" + i).classList.toggle("ativo", num === i);
+      }
+
+      // Filtra lista
+      if (num === 0) {
+        disponiveis = todosDados.map(p => p.nome);
+        document.getElementById("filtro-info").textContent = "Mostrando todos os presentes";
+      } else {
+        disponiveis = todosDados.filter(p => dentroDaFaixa(p.hora, FAIXAS[num])).map(p => p.nome);
+        document.getElementById("filtro-info").textContent =
+          "Faixa: " + FAIXAS[num].label + " · " + disponiveis.length + " pessoa(s)";
+      }
+
+      // Remove duplicatas
+      disponiveis = [...new Set(disponiveis)];
+
+      const nomeEl = document.getElementById("nome");
+      nomeEl.textContent = disponiveis.length > 0 ? "Pressione sortear!" : "Nenhum presente nesse horário";
+      nomeEl.style.color = "#ffd600";
 
       atualizarUI();
     }
 
-    /* ── Atualiza a interface principal ── */
     function atualizarUI() {
       const btn   = document.getElementById("btn");
       const total = document.getElementById("total");
-      const nome  = document.getElementById("nome");
 
-      if (todosPresentes.length === 0) {
-        nome.textContent  = "Nenhum presente hoje";
-        total.textContent = "0 presentes";
-        btn.textContent   = "SORTEAR";
-        btn.disabled      = true;
-      } else if (disponiveis.length === 0) {
-        nome.textContent  = "Todos já foram sorteados!";
-        total.textContent = todosPresentes.length + " presente(s) hoje";
+      if (disponiveis.length === 0) {
+        total.textContent = "0 disponíveis";
         btn.textContent   = "SORTEAR";
         btn.disabled      = true;
       } else {
-        if (vencedores.length === 0) nome.textContent = "Pressione sortear!";
-        total.textContent = disponiveis.length + " disponível(is) · " + todosPresentes.length + " presente(s)";
+        total.textContent = disponiveis.length + " disponível(is)";
         btn.textContent   = vencedores.length === 0 ? "SORTEAR" : "SORTEAR NOVAMENTE";
         btn.disabled      = false;
-        nome.style.color  = "#ffd600";
+        document.getElementById("nome").style.color = "#ffd600";
       }
 
       atualizarPainelVencedores();
     }
 
-    /* ── Realiza o sorteio ── */
     function sortear() {
       if (disponiveis.length === 0) return;
-
-      const btn   = document.getElementById("btn");
+      const btn    = document.getElementById("btn");
       const nomeEl = document.getElementById("nome");
 
       btn.disabled = true;
@@ -282,84 +425,58 @@
       nomeEl.classList.add("animando");
 
       let contador = 0;
-      const totalTicks = 30;
-
       intervalo = setInterval(() => {
-        // Mostra nomes aleatórios durante a animação (apenas dos disponíveis)
-        const idx = Math.floor(Math.random() * disponiveis.length);
-        nomeEl.textContent = disponiveis[idx];
+        nomeEl.textContent = disponiveis[Math.floor(Math.random() * disponiveis.length)];
         contador++;
-
-        if (contador >= totalTicks) {
+        if (contador >= 30) {
           clearInterval(intervalo);
           nomeEl.classList.remove("animando");
-
-          // Escolhe o vencedor final
-          const vencIdx = Math.floor(Math.random() * disponiveis.length);
+          const vencIdx  = Math.floor(Math.random() * disponiveis.length);
           const vencedor = disponiveis[vencIdx];
-
-          // Remove da lista de disponíveis
           disponiveis.splice(vencIdx, 1);
-
-          // Adiciona à lista de vencedores
           vencedores.push(vencedor);
-
-          // Exibe o nome sorteado
           nomeEl.textContent = vencedor;
           nomeEl.style.color = "#00e676";
-
           atualizarUI();
         }
       }, 80);
     }
 
-    /* ── Reinicia o sorteio (mantém a lista da planilha) ── */
     function resetarSorteio() {
       if (!confirm("Reiniciar o sorteio? Os vencedores serão apagados.")) return;
-      disponiveis = [...todosPresentes];
-      vencedores  = [];
-      const nomeEl = document.getElementById("nome");
-      nomeEl.textContent = "Pressione sortear!";
-      nomeEl.style.color = "#ffd600";
-      atualizarUI();
+      aplicarFiltro(filtroAtivo);
     }
 
-    /* ── Atualiza painel lateral de vencedores ── */
     function atualizarPainelVencedores() {
-      const lista   = document.getElementById("venc-lista");
-      const empty   = document.getElementById("venc-empty");
-      const sub     = document.getElementById("venc-sub");
-      const footer  = document.getElementById("venc-footer");
+      const lista  = document.getElementById("venc-lista");
+      const empty  = document.getElementById("venc-empty");
+      const sub    = document.getElementById("venc-sub");
+      const footer = document.getElementById("venc-footer");
+      const total  = filtroAtivo === 0
+        ? todosDados.length
+        : todosDados.filter(p => dentroDaFaixa(p.hora, FAIXAS[filtroAtivo])).length;
 
-      footer.textContent = vencedores.length + " / " + todosPresentes.length + " sorteados";
+      footer.textContent = vencedores.length + " / " + total + " sorteados";
 
       if (vencedores.length === 0) {
-        empty.style.display  = "flex";
-        lista.style.display  = "none";
-        sub.textContent      = "Nenhum sorteado ainda";
+        empty.style.display = "flex";
+        lista.style.display = "none";
+        sub.textContent     = "Nenhum sorteado ainda";
         return;
       }
 
       empty.style.display = "none";
       lista.style.display = "block";
-      sub.textContent     = vencedores.length === 1
-        ? "1 pessoa sorteada"
-        : vencedores.length + " pessoas sorteadas";
+      sub.textContent     = vencedores.length === 1 ? "1 pessoa sorteada" : vencedores.length + " pessoas sorteadas";
 
-      // Reconstrói a lista (mais recente no topo)
       lista.innerHTML = "";
-      const ordenados = [...vencedores].reverse();
-      ordenados.forEach((nome, i) => {
+      [...vencedores].reverse().forEach((nome, i) => {
         const li = document.createElement("li");
-        li.innerHTML = `
-          <span class="num-badge">${vencedores.length - i}</span>
-          <span class="venc-nome">${nome}</span>
-        `;
+        li.innerHTML = `<span class="num-badge">${vencedores.length - i}</span><span class="venc-nome">${nome}</span>`;
         lista.appendChild(li);
       });
     }
 
-    // ── Carrega via JSONP ──
     var script = document.createElement("script");
     script.src = URL_SCRIPT;
     document.head.appendChild(script);
