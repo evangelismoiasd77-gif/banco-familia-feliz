@@ -98,7 +98,7 @@
     }
     .btn-reset:hover { background: #1a1a2e; color: #aaa; border-color: #555; }
 
-    /* ── FILTRO DE HORÁRIO (livre) ── */
+    /* ── FILTRO DE HORÁRIO ── */
     .filtro-panel {
       background: #000;
       border-radius: 20px;
@@ -130,8 +130,9 @@
       color: #aaa;
       font-size: 13px;
       font-weight: bold;
-      width: 38px;
+      width: 50px;
       flex-shrink: 0;
+      text-align: left;
     }
     .filtro-linha input[type="time"] {
       flex: 1;
@@ -180,8 +181,8 @@
     .btn-filtro-todos.ativo { background: #00bcd4; color: #000; }
 
     .filtro-info {
-      color: #444;
-      font-size: 12px;
+      color: #888;
+      font-size: 13px;
       text-align: center;
       padding: 14px 16px 18px;
     }
@@ -323,7 +324,7 @@
           Todos os presentes
         </button>
       </div>
-      <div class="filtro-info" id="filtro-info">Nenhum filtro aplicado</div>
+      <div class="filtro-info" id="filtro-info">Carregando dados...</div>
     </div>
   </div>
 
@@ -350,7 +351,11 @@
 
     function receberDados(data) {
       todosDados = data.presentes.map(p => {
-        if (typeof p === "object") return { nome: String(p.nome).trim(), hora: p.hora || "" };
+        if (typeof p === "object") {
+          // Garante a extração da hora mesmo com diferentes nomes de chaves na resposta
+          const horaVal = p.hora || p.horario || p.timestamp || p.carimbo || p["Carimbo de data/hora"] || "";
+          return { nome: String(p.nome).trim(), hora: horaVal };
+        }
         return { nome: String(p).trim(), hora: "" };
       }).filter(p => p.nome);
 
@@ -359,19 +364,36 @@
 
     function dentroDaFaixa(horaStr, faixa) {
       if (!horaStr) return false;
-      const partes = String(horaStr).split(":");
+      
+      let str = String(horaStr).trim();
+      
+      // Se contiver data completa junto (ex: "23/06/2026 09:49:32" ou ISO "2026-06-23T09:49:32")
+      // extraímos apenas a parte do horário
+      if (str.includes(" ")) {
+        str = str.split(/\s+/)[1]; // Pega a parte após o espaço
+      } else if (str.includes("T")) {
+        str = str.split("T")[1];   // Pega a parte após a letra T
+      }
+
+      const partes = str.split(":");
       if (partes.length < 2) return false;
-      const h = parseInt(partes[0]);
-      const m = parseInt(partes[1]);
+      
+      const h = parseInt(partes[0], 10);
+      const m = parseInt(partes[1], 10);
+      
+      if (isNaN(h) || isNaN(m)) return false;
+
       const totalMin = h * 60 + m;
       const iniMin   = faixa.hIni * 60 + faixa.mIni;
       const fimMin   = faixa.hFim * 60 + faixa.mFim;
-      return totalMin >= iniMin && totalMin < fimMin;
+      
+      // Ajustado com '<=' para ser inclusivo com o minuto final determinado por você
+      return totalMin >= iniMin && totalMin <= fimMin;
     }
 
     function aplicarFiltroPersonalizado() {
-      const ini = document.getElementById("hora-ini").value; // "19:00"
-      const fim = document.getElementById("hora-fim").value; // "20:30"
+      const ini = document.getElementById("hora-ini").value; 
+      const fim = document.getElementById("hora-fim").value; 
       const erroEl = document.getElementById("filtro-erro");
 
       if (!ini || !fim) {
@@ -383,14 +405,14 @@
       const [hIni, mIni] = ini.split(":").map(Number);
       const [hFim, mFim] = fim.split(":").map(Number);
 
-      if (hIni * 60 + mIni >= hFim * 60 + mFim) {
+      if (hIni * 60 + mIni > hFim * 60 + mFim) {
         erroEl.textContent = "O horário final deve ser depois do inicial";
         erroEl.style.display = "block";
         return;
       }
 
       erroEl.style.display = "none";
-      faixaAtual = { hIni, mIni, hFim, mFim, label: ini + " – " + fim };
+      faixaAtual = { hIni, mIni, hFim, mFim, label: ini + " às " + fim };
       filtroAtivo = 1;
       aplicarFiltroInterno();
     }
@@ -407,11 +429,10 @@
 
       if (filtroAtivo === 0) {
         disponiveis = todosDados.map(p => p.nome);
-        document.getElementById("filtro-info").textContent = "Mostrando todos os presentes";
+        document.getElementById("filtro-info").innerHTML = `Exibindo todos os presentes<br><strong>Total: ${disponiveis.length} pessoa(s)</strong>`;
       } else {
         disponiveis = todosDados.filter(p => dentroDaFaixa(p.hora, faixaAtual)).map(p => p.nome);
-        document.getElementById("filtro-info").textContent =
-          "Faixa: " + faixaAtual.label + " · " + disponiveis.length + " pessoa(s)";
+        document.getElementById("filtro-info").innerHTML = `Faixa: ${faixaAtual.label}<br><strong>Filtrados: ${disponiveis.length} pessoa(s)</strong>`;
       }
 
       disponiveis = [...new Set(disponiveis)];
