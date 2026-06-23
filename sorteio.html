@@ -98,7 +98,7 @@
     }
     .btn-reset:hover { background: #1a1a2e; color: #aaa; border-color: #555; }
 
-    /* ── FILTRO DE HORÁRIO ── */
+    /* ── FILTRO DE HORÁRIO (livre) ── */
     .filtro-panel {
       background: #000;
       border-radius: 20px;
@@ -117,62 +117,80 @@
       text-align: center;
       font-weight: bold;
     }
-    .filtro-botoes {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 16px;
+    .filtro-corpo {
+      padding: 20px 16px 8px;
     }
-    .btn-filtro {
-      background: #111;
+    .filtro-linha {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .filtro-linha label {
       color: #aaa;
+      font-size: 13px;
+      font-weight: bold;
+      width: 38px;
+      flex-shrink: 0;
+    }
+    .filtro-linha input[type="time"] {
+      flex: 1;
+      background: #111;
+      color: #fff;
       border: 1px solid #222;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+    }
+    .filtro-linha input[type="time"]:focus { border-color: #00bcd4; }
+    .filtro-linha input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+    .btn-aplicar {
+      width: 100%;
+      background: #00bcd4;
+      color: #000;
+      border: none;
       border-radius: 10px;
-      padding: 14px 16px;
+      padding: 12px 16px;
       font-size: 14px;
       font-weight: bold;
       cursor: pointer;
-      transition: all 0.2s;
-      text-align: left;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      transition: background 0.2s;
+      margin-top: 4px;
     }
-    .btn-filtro:hover { background: #1a1a2e; border-color: #00bcd4; color: #fff; }
-    .btn-filtro.ativo {
-      background: #0d47a1;
-      border-color: #00bcd4;
-      color: #fff;
-    }
-    .btn-filtro .count {
-      background: #00bcd4;
-      color: #000;
-      border-radius: 12px;
-      padding: 2px 10px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-    .btn-filtro.ativo .count { background: #fff; color: #0d47a1; }
+    .btn-aplicar:hover { background: #00e5ff; }
+
     .btn-filtro-todos {
+      width: 100%;
       background: #111;
       color: #00bcd4;
       border: 1px solid #00bcd4;
       border-radius: 10px;
-      padding: 12px 16px;
+      padding: 10px 16px;
       font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.2s;
       text-align: center;
-      margin: 0 16px 16px;
+      margin-top: 10px;
     }
     .btn-filtro-todos:hover { background: #00bcd4; color: #000; }
     .btn-filtro-todos.ativo { background: #00bcd4; color: #000; }
+
     .filtro-info {
       color: #444;
       font-size: 12px;
       text-align: center;
-      padding: 0 16px 16px;
+      padding: 14px 16px 18px;
+    }
+    .filtro-erro {
+      color: #ef5350;
+      font-size: 12px;
+      text-align: center;
+      padding: 0 16px 8px;
+      display: none;
     }
 
     /* ── PAINEL VENCEDORES ── */
@@ -286,27 +304,25 @@
     </div>
   </div>
 
-  <!-- FILTRO DE HORÁRIO -->
+  <!-- FILTRO DE HORÁRIO LIVRE -->
   <div style="display:flex;flex-direction:column;gap:16px;align-items:center;">
     <div class="filtro-panel">
       <div class="filtro-header">Filtro de presença por horário</div>
-      <div class="filtro-botoes">
-        <button class="btn-filtro" id="filtro-1" onclick="aplicarFiltro(1)">
-          <span>🕖 19h00 – 19h30</span>
-          <span class="count" id="count-1">0</span>
-        </button>
-        <button class="btn-filtro" id="filtro-2" onclick="aplicarFiltro(2)">
-          <span>🕖 19h30 – 20h00</span>
-          <span class="count" id="count-2">0</span>
-        </button>
-        <button class="btn-filtro" id="filtro-3" onclick="aplicarFiltro(3)">
-          <span>🕗 20h00 – 20h30</span>
-          <span class="count" id="count-3">0</span>
+      <div class="filtro-corpo">
+        <div class="filtro-linha">
+          <label>Início</label>
+          <input type="time" id="hora-ini" value="19:00">
+        </div>
+        <div class="filtro-linha">
+          <label>Fim</label>
+          <input type="time" id="hora-fim" value="20:30">
+        </div>
+        <div class="filtro-erro" id="filtro-erro">O horário final deve ser depois do inicial</div>
+        <button class="btn-aplicar" onclick="aplicarFiltroPersonalizado()">Aplicar filtro</button>
+        <button class="btn-filtro-todos" id="filtro-todos" onclick="aplicarFiltro(0)">
+          Todos os presentes
         </button>
       </div>
-      <button class="btn-filtro-todos" id="filtro-todos" onclick="aplicarFiltro(0)">
-        Todos os presentes
-      </button>
       <div class="filtro-info" id="filtro-info">Nenhum filtro aplicado</div>
     </div>
   </div>
@@ -325,18 +341,12 @@
   <script>
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbz3TuVvyJqUEGcbIPKaIpU_yLs-xdppeCVPxCUoh3OIBBqLTUlszWV-4UKw2nj8KlHP/exec?acao=sorteio&callback=receberDados";
 
-    let todosDados     = []; // [{nome, hora}]
-    let disponiveis    = [];
-    let vencedores     = [];
-    let filtroAtivo    = 0;
-    let intervalo      = null;
-
-    const FAIXAS = [
-      null,
-      { label: "19h00 – 19h30", hIni: 19, mIni: 0,  hFim: 19, mFim: 30 },
-      { label: "19h30 – 20h00", hIni: 19, mIni: 30, hFim: 20, mFim: 0  },
-      { label: "20h00 – 20h30", hIni: 20, mIni: 0,  hFim: 20, mFim: 30 },
-    ];
+    let todosDados   = []; // [{nome, hora}]
+    let disponiveis  = [];
+    let vencedores   = [];
+    let filtroAtivo  = 0;        // 0 = todos, 1 = personalizado
+    let faixaAtual   = null;     // {hIni, mIni, hFim, mFim, label}
+    let intervalo    = null;
 
     function receberDados(data) {
       todosDados = data.presentes.map(p => {
@@ -344,7 +354,6 @@
         return { nome: String(p).trim(), hora: "" };
       }).filter(p => p.nome);
 
-      atualizarContadores();
       aplicarFiltro(0);
     }
 
@@ -360,34 +369,51 @@
       return totalMin >= iniMin && totalMin < fimMin;
     }
 
-    function atualizarContadores() {
-      for (let i = 1; i <= 3; i++) {
-        const c = todosDados.filter(p => dentroDaFaixa(p.hora, FAIXAS[i])).length;
-        document.getElementById("count-" + i).textContent = c;
+    function aplicarFiltroPersonalizado() {
+      const ini = document.getElementById("hora-ini").value; // "19:00"
+      const fim = document.getElementById("hora-fim").value; // "20:30"
+      const erroEl = document.getElementById("filtro-erro");
+
+      if (!ini || !fim) {
+        erroEl.textContent = "Preencha os dois horários";
+        erroEl.style.display = "block";
+        return;
       }
+
+      const [hIni, mIni] = ini.split(":").map(Number);
+      const [hFim, mFim] = fim.split(":").map(Number);
+
+      if (hIni * 60 + mIni >= hFim * 60 + mFim) {
+        erroEl.textContent = "O horário final deve ser depois do inicial";
+        erroEl.style.display = "block";
+        return;
+      }
+
+      erroEl.style.display = "none";
+      faixaAtual = { hIni, mIni, hFim, mFim, label: ini + " – " + fim };
+      filtroAtivo = 1;
+      aplicarFiltroInterno();
     }
 
     function aplicarFiltro(num) {
       filtroAtivo = num;
-      vencedores  = [];
+      faixaAtual = null;
+      aplicarFiltroInterno();
+    }
 
-      // Atualiza botões
-      document.getElementById("filtro-todos").classList.toggle("ativo", num === 0);
-      for (let i = 1; i <= 3; i++) {
-        document.getElementById("filtro-" + i).classList.toggle("ativo", num === i);
-      }
+    function aplicarFiltroInterno() {
+      vencedores = [];
+      document.getElementById("filtro-todos").classList.toggle("ativo", filtroAtivo === 0);
 
-      // Filtra lista
-      if (num === 0) {
+      if (filtroAtivo === 0) {
         disponiveis = todosDados.map(p => p.nome);
         document.getElementById("filtro-info").textContent = "Mostrando todos os presentes";
       } else {
-        disponiveis = todosDados.filter(p => dentroDaFaixa(p.hora, FAIXAS[num])).map(p => p.nome);
+        disponiveis = todosDados.filter(p => dentroDaFaixa(p.hora, faixaAtual)).map(p => p.nome);
         document.getElementById("filtro-info").textContent =
-          "Faixa: " + FAIXAS[num].label + " · " + disponiveis.length + " pessoa(s)";
+          "Faixa: " + faixaAtual.label + " · " + disponiveis.length + " pessoa(s)";
       }
 
-      // Remove duplicatas
       disponiveis = [...new Set(disponiveis)];
 
       const nomeEl = document.getElementById("nome");
@@ -444,7 +470,7 @@
 
     function resetarSorteio() {
       if (!confirm("Reiniciar o sorteio? Os vencedores serão apagados.")) return;
-      aplicarFiltro(filtroAtivo);
+      aplicarFiltroInterno();
     }
 
     function atualizarPainelVencedores() {
@@ -454,7 +480,7 @@
       const footer = document.getElementById("venc-footer");
       const total  = filtroAtivo === 0
         ? todosDados.length
-        : todosDados.filter(p => dentroDaFaixa(p.hora, FAIXAS[filtroAtivo])).length;
+        : todosDados.filter(p => dentroDaFaixa(p.hora, faixaAtual)).length;
 
       footer.textContent = vencedores.length + " / " + total + " sorteados";
 
