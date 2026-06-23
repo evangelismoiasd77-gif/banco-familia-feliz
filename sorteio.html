@@ -194,6 +194,21 @@
       display: none;
     }
 
+    /* Painel de diagnóstico (Subtil) */
+    .debug-box {
+      margin-top: 15px;
+      padding: 10px;
+      background: #111;
+      border-radius: 8px;
+      border: 1px dashed #333;
+      text-align: left;
+      font-family: monospace;
+      font-size: 10px;
+      color: #666;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
     /* ── PAINEL VENCEDORES ── */
     .vencedores-panel {
       background: #000;
@@ -312,17 +327,23 @@
       <div class="filtro-corpo">
         <div class="filtro-linha">
           <label>Início</label>
-          <input type="time" id="hora-ini" value="19:00">
+          <input type="time" id="hora-ini" value="09:00">
         </div>
         <div class="filtro-linha">
           <label>Fim</label>
-          <input type="time" id="hora-fim" value="20:30">
+          <input type="time" id="hora-fim" value="10:00">
         </div>
         <div class="filtro-erro" id="filtro-erro">O horário final deve ser depois do inicial</div>
         <button class="btn-aplicar" onclick="aplicarFiltroPersonalizado()">Aplicar filtro</button>
         <button class="btn-filtro-todos" id="filtro-todos" onclick="aplicarFiltro(0)">
           Todos os presentes
         </button>
+
+        <!-- Diagnóstico Visual -->
+        <div class="debug-box" id="debug-box">
+          <strong>Diagnóstico da API:</strong>
+          <div id="debug-conteudo" style="margin-top: 5px; color: #888;">Aguardando dados...</div>
+        </div>
       </div>
       <div class="filtro-info" id="filtro-info">Carregando dados...</div>
     </div>
@@ -350,9 +371,31 @@
     let intervalo    = null;
 
     function receberDados(data) {
+      if (!data || !data.presentes) {
+        document.getElementById("debug-conteudo").textContent = "Nenhum participante recebido da API.";
+        return;
+      }
+
+      // Painel de diagnóstico para mostrar o formato bruto dos dados recebidos
+      const amostra = data.presentes.slice(0, 3);
+      let debugText = "";
+      amostra.forEach((p, idx) => {
+        let rawHora = "";
+        let rawNome = "";
+        if (typeof p === "object") {
+          rawNome = p.nome || "";
+          rawHora = p.hora || p.horario || p.timestamp || p.carimbo || p["Carimbo de data/hora"] || "Indefinido";
+        } else {
+          rawNome = String(p);
+          rawHora = "Nenhum (API enviou apenas texto)";
+        }
+        debugText += `[${idx+1}] Nome: ${rawNome} | Hora original: ${JSON.stringify(rawHora)}<br>`;
+      });
+      document.getElementById("debug-conteudo").innerHTML = debugText;
+
+      // Mapeia os dados recebidos
       todosDados = data.presentes.map(p => {
         if (typeof p === "object") {
-          // Garante a extração da hora mesmo com diferentes nomes de chaves na resposta
           const horaVal = p.hora || p.horario || p.timestamp || p.carimbo || p["Carimbo de data/hora"] || "";
           return { nome: String(p.nome).trim(), hora: horaVal };
         }
@@ -362,32 +405,62 @@
       aplicarFiltro(0);
     }
 
-    function dentroDaFaixa(horaStr, faixa) {
-      if (!horaStr) return false;
-      
+    // Processa a hora crua e devolve um objeto com { hora, minuto } localizados
+    function obterHoraEMinutoLocal(horaStr) {
+      if (!horaStr) return null;
       let str = String(horaStr).trim();
-      
-      // Se contiver data completa junto (ex: "23/06/2026 09:49:32" ou ISO "2026-06-23T09:49:32")
-      // extraímos apenas a parte do horário
-      if (str.includes(" ")) {
-        str = str.split(/\s+/)[1]; // Pega a parte após o espaço
-      } else if (str.includes("T")) {
-        str = str.split("T")[1];   // Pega a parte após a letra T
+
+      // Caso 1: Formato brasileiro "DD/MM/AAAA HH:MM:SS" (muito comum em planilhas)
+      const regexBR = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/;
+      let match = str.match(regexBR);
+      if (match) {
+        return {
+          hora: parseInt(match[4], 10),
+          minuto: parseInt(match[5], 10)
+        };
       }
 
-      const partes = str.split(":");
-      if (partes.length < 2) return false;
-      
-      const h = parseInt(partes[0], 10);
-      const m = parseInt(partes[1], 10);
-      
-      if (isNaN(h) || isNaN(m)) return false;
+      // Caso 2: Objeto Date ou ISO UTC (ex: "2026-06-23T12:49:32.000Z")
+      // O construtor do Date normaliza a hora UTC para o fuso horário local do seu navegador
+      let dateObj = new Date(str);
+      if (!isNaN(dateObj.getTime())) {
+        return {
+          hora: dateObj.getHours(),
+          minuto: dateObj.getMinutes()
+        };
+      }
 
-      const totalMin = h * 60 + m;
+      // Caso 3: String de tempo puro "HH:MM:SS" ou "HH:MM"
+      const regexTempo = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/;
+      match = str.match(regexTempo);
+      if (match) {
+        return {
+          hora: parseInt(match[1], 10),
+          minuto: parseInt(match[2], 10)
+        };
+      }
+
+      // Caso 4: Busca qualquer padrão de tempo genérico na string (ex: "Tue Jun 23 2026 09:49:32")
+      const regexQualquerTempo = /(\d{1,2}):(\d{1,2})(?::(\d{1,2}))/;
+      match = str.match(regexQualquerTempo);
+      if (match) {
+        return {
+          hora: parseInt(match[1], 10),
+          minuto: parseInt(match[2], 10)
+        };
+      }
+
+      return null;
+    }
+
+    function dentroDaFaixa(horaStr, faixa) {
+      const parsed = obterHoraEMinutoLocal(horaStr);
+      if (!parsed) return false;
+
+      const totalMin = parsed.hora * 60 + parsed.minuto;
       const iniMin   = faixa.hIni * 60 + faixa.mIni;
       const fimMin   = faixa.hFim * 60 + faixa.mFim;
       
-      // Ajustado com '<=' para ser inclusivo com o minuto final determinado por você
       return totalMin >= iniMin && totalMin <= fimMin;
     }
 
