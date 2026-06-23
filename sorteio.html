@@ -180,6 +180,27 @@
     .btn-filtro-todos:hover { background: #00bcd4; color: #000; }
     .btn-filtro-todos.ativo { background: #00bcd4; color: #000; }
 
+    /* Botão de diagnóstico discreto */
+    .btn-debug {
+      width: 100%;
+      background: transparent;
+      color: #555;
+      border: 1px solid #222;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      margin-top: 12px;
+    }
+    .btn-debug:hover {
+      background: #111;
+      color: #aaa;
+      border-color: #444;
+    }
+
     .filtro-info {
       color: #888;
       font-size: 13px;
@@ -194,7 +215,7 @@
       display: none;
     }
 
-    /* Painel de diagnóstico (Subtil) */
+    /* Painel de diagnóstico (Começa oculto) */
     .debug-box {
       margin-top: 15px;
       padding: 10px;
@@ -207,6 +228,7 @@
       color: #666;
       max-height: 120px;
       overflow-y: auto;
+      display: none; /* Oculto por padrão */
     }
 
     /* ── PAINEL VENCEDORES ── */
@@ -339,6 +361,11 @@
           Todos os presentes
         </button>
 
+        <!-- Botão Discreto de Diagnóstico -->
+        <button class="btn-debug" id="btn-toggle-debug" onclick="alternarDiagnostico()">
+          Mostrar horários
+        </button>
+
         <!-- Diagnóstico Visual -->
         <div class="debug-box" id="debug-box">
           <strong>Diagnóstico da API:</strong>
@@ -403,6 +430,19 @@
       }).filter(p => p.nome);
 
       aplicarFiltro(0);
+    }
+
+    // Alternar visibilidade da caixa de diagnóstico
+    function alternarDiagnostico() {
+      const debugBox = document.getElementById("debug-box");
+      const btn = document.getElementById("btn-toggle-debug");
+      if (debugBox.style.display === "none" || debugBox.style.display === "") {
+        debugBox.style.display = "block";
+        btn.textContent = "Ocultar horários";
+      } else {
+        debugBox.style.display = "none";
+        btn.textContent = "Mostrar horários";
+      }
     }
 
     // Processa a hora crua e devolve um objeto com { hora, minuto } localizados
