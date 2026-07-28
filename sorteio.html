@@ -388,6 +388,19 @@
   </div>
 
   <script>
+// Gerador de número aleatório criptograficamente seguro (sem viés de módulo)
+function inteiroAleatorioSeguro(max) {
+  const maxUint32 = 0xFFFFFFFF;
+  const limite = maxUint32 - (maxUint32 % max);
+  const buffer = new Uint32Array(1);
+  let rand;
+  do {
+    crypto.getRandomValues(buffer);
+    rand = buffer[0];
+  } while (rand >= limite);
+  return rand % max;
+}
+    
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwlDOlA7LTyqg9Wo9veXW_MPdykYZxn9YdPy3qpY1gnZy-JzVHRuUQfrkXvNavgfAQF/exec?acao=sorteio&callback=receberDados";
 
     let todosDados   = []; // [{nome, hora}]
@@ -586,12 +599,12 @@
 
       let contador = 0;
       intervalo = setInterval(() => {
-        nomeEl.textContent = disponiveis[Math.floor(Math.random() * disponiveis.length)];
+        nomeEl.textContent = disponiveis[inteiroAleatorioSeguro(disponiveis.length)];
         contador++;
         if (contador >= 30) {
           clearInterval(intervalo);
           nomeEl.classList.remove("animando");
-          const vencIdx  = Math.floor(Math.random() * disponiveis.length);
+          const vencIdx = inteiroAleatorioSeguro(disponiveis.length);
           const vencedor = disponiveis[vencIdx];
           disponiveis.splice(vencIdx, 1);
           vencedores.push(vencedor);
