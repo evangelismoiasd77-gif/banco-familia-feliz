@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diretório de Ruas — Evangelismo Escola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --paper:#F1E9D8;
+    --paper-deep:#E7DBC2;
+    --card:#FBF7EE;
+    --ink:#2B3A2F;
+    --ink-soft:#4A5A4C;
+    --muted:#8A7C64;
+    --gold:#C9932E;
+    --moss:#4C6B54;
+    --rust:#B4552B;
+    --line: rgba(43,58,47,0.16);
+    --shadow: 0 6px 16px rgba(43,58,47,0.10), 0 1px 3px rgba(43,58,47,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(201,147,46,0.10), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(76,107,84,0.10), transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  a{color:inherit;}
+
+  header{
+    padding:34px 24px 18px;
+    max-width:980px;
+    margin:0 auto;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--rust);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:18px;height:1px;
+    background:var(--rust);
+    display:inline-block;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(28px,4vw,42px);
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--ink-soft);
+    font-size:15px;
+    max-width:560px;
+    line-height:1.5;
+    margin-bottom:22px;
+  }
+  .searchbar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    max-width:420px;
+  }
+  .searchbar input{
+    flex:1;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:11px 14px;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+    outline:none;
+  }
+  .searchbar input:focus{border-color:var(--gold);}
+  .searchbar input::placeholder{color:var(--muted);}
+
+  .layout{
+    max-width:980px;
+    margin:0 auto;
+    padding:8px 24px 60px;
+    display:flex;
+    flex-direction:column;
+    gap:26px;
+  }
+
+  .status{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    padding:18px 0;
+  }
+  .status.err{color:var(--rust);}
+  .empty{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--muted);
+    padding:30px 10px;
+    text-align:center;
+    font-size:13px;
+  }
+
+  .street-block{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    animation:fadeIn .22s ease;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .street-bar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    padding:14px 18px;
+    background:var(--paper-deep);
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .street-bar::before{
+    content:"";
+    position:absolute;
+    left:0;top:0;bottom:0;
+    width:5px;
+    background:var(--moss);
+  }
+  .street-bar h2{
+    font-family:'Fraunces',serif;
+    font-size:19px;
+    margin:0;
+    padding-left:6px;
+  }
+  .street-bar .tally{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    background:rgba(43,58,47,0.06);
+    border-radius:20px;
+    padding:2px 9px;
+  }
+  .wa-btn{
+    margin-left:auto;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:8px 13px;
+    background:var(--moss);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    cursor:pointer;
+    text-decoration:none;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .wa-btn:hover{background:#3d5843;transform:translateY(-1px);}
+  .wa-btn svg{width:14px;height:14px;flex-shrink:0;}
+  @media (max-width:520px){
+    .wa-btn{margin-left:0;width:100%;justify-content:center;}
+  }
+
+  table.roster{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+  }
+  table.roster thead th{
+    text-align:left;
+    background:var(--gold);
+    color:#2B2410;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    padding:9px 14px;
+    white-space:nowrap;
+  }
+  table.roster tbody td{
+    padding:9px 14px;
+    border-top:1px solid var(--line);
+    vertical-align:top;
+    word-break:break-word;
+  }
+  table.roster tbody tr:nth-child(even){
+    background:rgba(43,58,47,0.03);
+  }
+  table.roster tbody tr:hover{
+    background:rgba(201,147,46,0.08);
+  }
+  .col-nome{font-family:'Inter',sans-serif; font-weight:500;}
+
+  @media (max-width:640px){
+    table.roster, table.roster thead, table.roster tbody, table.roster th, table.roster td, table.roster tr{
+      display:block;
+    }
+    table.roster thead{display:none;}
+    table.roster tbody tr{
+      border-top:1px solid var(--line);
+      padding:10px 14px;
+    }
+    table.roster tbody td{
+      border:none;
+      padding:3px 0;
+      display:flex;
+      gap:6px;
+    }
+    table.roster tbody td::before{
+      content:attr(data-label);
+      font-family:'Inter',sans-serif;
+      font-size:10.5px;
+      text-transform:uppercase;
+      color:var(--muted);
+      min-width:92px;
+      flex-shrink:0;
+    }
+  }
+
+  footer{
+    text-align:center;
+    padding:26px 24px 40px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Evangelismo Escola</div>
+  <h1>Diretório por rua</h1>
+  <p class="subtitle">Cada pessoa cadastrada, organizada pela rua informada no formulário — para facilitar a visita casa em casa.</p>
+  <div class="searchbar">
+    <input type="text" id="search" placeholder="Buscar por nome ou telefone…">
+  </div>
+</header>
+
+<div class="layout" id="layout">
+  <div class="status" id="status">Carregando dados da planilha…</div>
+</div>
+
+<footer>Atualizado automaticamente a partir da planilha do Google Sheets</footer>
+
+<script>
+/* ======================================================
+   CONFIGURAÇÃO
+   ====================================================== */
+const CONFIG = {
+  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3XNpGKHMkl4rI1dm672WioH82IdkccszOLn9J0IonCxoJylTICqJXmmBJmrp7pPaqJw3diUHncAdM/pub?gid=794974385&single=true&output=csv"
+};
+
+// Palavras-chave (sem acento) para identificar cada coluna automaticamente
+const FIELD_MATCHERS = {
+  telefone:  ["telefone", "id_telefone", "fone"],
+  nome:      ["nome"],
+  rua:       ["rua", "endereco"],
+  numero:    ["numero"],
+  referencia:["referencia", "ponto de referencia"]
+};
+
+function normalize(str){
+  return (str||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+}
+
+function findColumn(headers, keywords){
+  return headers.find(h => keywords.some(k => normalize(h).includes(k)));
+}
+
+function escapeHtml(str){
+  return (str ?? "").toString()
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+let DATA = { groups: {}, order: [] };
+let COLS = {};
+
+function render(filterText){
+  const layout = document.getElementById("layout");
+  const term = normalize(filterText||"").trim();
+
+  const blocks = DATA.order.map(street=>{
+    const people = DATA.groups[street].filter(p=>{
+      if(!term) return true;
+      return normalize(p.nome).includes(term) || normalize(p.telefone).includes(term);
+    });
+    if(!people.length) return "";
+
+    const rows = people.map(p => `
+      <tr>
+        <td data-label="Telefone">${escapeHtml(p.telefone)}</td>
+        <td data-label="Nome" class="col-nome">${escapeHtml(p.nome)}</td>
+        <td data-label="Rua">${escapeHtml(p.rua)}</td>
+        <td data-label="Número">${escapeHtml(p.numero)}</td>
+        <td data-label="Ponto de referência">${escapeHtml(p.referencia)}</td>
+      </tr>`).join("");
+
+    return `
+      <section class="street-block">
+        <div class="street-bar">
+          <h2>${escapeHtml(street)}</h2>
+          <span class="tally">${people.length} pessoa${people.length===1?"":"s"}</span>
+          <button class="wa-btn" data-street="${escapeHtml(street)}" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2zm0 1.67c2.19 0 4.25.85 5.8 2.4a8.2 8.2 0 0 1 2.42 5.84c0 4.55-3.7 8.25-8.25 8.25a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.39c0-4.55 3.7-8.24 8.27-8.24zm-4.53 4.7c-.16 0-.42.06-.64.31-.22.25-.85.83-.85 2.02s.87 2.35.99 2.51c.12.16 1.7 2.6 4.13 3.65 2.02.87 2.44.7 2.88.65.44-.04 1.4-.57 1.6-1.12.2-.55.2-1.02.14-1.12-.06-.1-.22-.16-.46-.28-.24-.12-1.4-.69-1.62-.77-.22-.08-.38-.12-.54.12-.16.24-.62.77-.76.93-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.92-1.18-.71-.63-1.19-1.4-1.33-1.64-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.32-.75-1.8-.2-.47-.4-.4-.55-.41h-.47z"/></svg>
+            Enviar via WhatsApp
+          </button>
+        </div>
+        <table class="roster">
+          <thead>
+            <tr>
+              <th>Telefone</th><th>Nome</th><th>Rua</th><th>Número</th><th>Ponto de referência</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </section>`;
+  }).join("");
+
+  layout.innerHTML = blocks.trim()
+    ? blocks
+    : `<div class="empty">Nenhum resultado encontrado.</div>`;
+
+  layout.querySelectorAll(".wa-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const street = btn.getAttribute("data-street");
+      const people = DATA.groups[street].filter(p=>{
+        if(!term) return true;
+        return normalize(p.nome).includes(term) || normalize(p.telefone).includes(term);
+      });
+      sendStreetViaWhatsApp(street, people);
+    });
+  });
+}
+
+function sendStreetViaWhatsApp(street, people){
+  const linhas = people.map((p,i)=>{
+    const partes = [p.nome || "Sem nome"];
+    if(p.numero) partes.push(`nº ${p.numero}`);
+    if(p.referencia) partes.push(`(${p.referencia})`);
+    return `${i+1}. ${partes.join(" — ")} — ${p.telefone || "sem telefone"}`;
+  }).join("\n");
+
+  const texto =
+`*Rua: ${street}*\n` +
+`${people.length} pessoa${people.length===1?"":"s"} cadastrada${people.length===1?"":"s"}\n\n` +
+linhas +
+`\n\n_Lista gerada pelo Diretório por Rua — Evangelismo Escola_`;
+
+  window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
+}
+
+function loadData(){
+  if(!CONFIG.SHEET_CSV_URL){
+    document.getElementById("status").innerHTML = `<span style="color:var(--rust)">Configure CONFIG.SHEET_CSV_URL no início do script.</span>`;
+    return;
+  }
+
+  Papa.parse(CONFIG.SHEET_CSV_URL, {
+    download:true,
+    header:true,
+    skipEmptyLines:true,
+    complete: function(results){
+      const rows = results.data;
+      if(!rows.length){
+        document.getElementById("status").textContent = "A planilha não retornou nenhum dado.";
+        return;
+      }
+      const headers = Object.keys(rows[0]);
+      COLS = {
+        telefone: findColumn(headers, FIELD_MATCHERS.telefone),
+        nome: findColumn(headers, FIELD_MATCHERS.nome),
+        rua: findColumn(headers, FIELD_MATCHERS.rua),
+        numero: findColumn(headers, FIELD_MATCHERS.numero),
+        referencia: findColumn(headers, FIELD_MATCHERS.referencia)
+      };
+
+      if(!COLS.rua){
+        document.getElementById("status").innerHTML =
+          `<span style="color:var(--rust)">Não encontrei uma coluna de rua/endereço na planilha. Confira os nomes das colunas.</span>`;
+        return;
+      }
+
+      const groups = {};
+      const order = [];
+
+      rows.forEach(r=>{
+        const rua = (r[COLS.rua] || "").trim();
+        if(!rua) return;
+        if(!groups[rua]){ groups[rua] = []; order.push(rua); }
+        groups[rua].push({
+          telefone: COLS.telefone ? r[COLS.telefone] : "",
+          nome: COLS.nome ? r[COLS.nome] : "",
+          rua: rua,
+          numero: COLS.numero ? r[COLS.numero] : "",
+          referencia: COLS.referencia ? r[COLS.referencia] : ""
+        });
+      });
+
+      order.sort((a,b)=> a.localeCompare(b,'pt-BR'));
+
+      DATA = { groups, order };
+      document.getElementById("status").textContent = "";
+      render("");
+    },
+    error: function(err){
+      document.getElementById("status").innerHTML =
+        `<span style="color:var(--rust)">Erro ao carregar a planilha: ${escapeHtml(err.message||err)}. Confira se o link foi publicado corretamente.</span>`;
+    }
+  });
+}
+
+document.getElementById("search").addEventListener("input", (e)=> render(e.target.value));
+loadData();
+</script>
+</body>
+</html>
