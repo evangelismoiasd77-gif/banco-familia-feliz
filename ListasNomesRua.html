@@ -359,6 +359,12 @@ function dayTime(dateObj){
   return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
 }
 
+// Extrai só a parte "dd/mm/aaaa" de um carimbo "dd/mm/aaaa hh:mm:ss"
+function onlyDate(str){
+  if(!str) return "";
+  return str.trim().split(" ")[0];
+}
+
 let DATA = { groups: {}, order: [] };
 let COLS = {};
 
@@ -377,7 +383,7 @@ function render(filterText){
       <tr class="${p.novato ? 'novato' : ''}">
         <td data-label="Telefone">${escapeHtml(p.telefone)}</td>
         <td data-label="Nome" class="col-nome">${escapeHtml(p.nome)}${p.novato ? '<span class="badge-novo">novo</span>' : ''}</td>
-        <td data-label="Data de participação">${escapeHtml(p.data)}</td>
+        <td data-label="Data do cadastro">${escapeHtml(p.data)}</td>
         <td data-label="Rua">${escapeHtml(p.rua)}</td>
         <td data-label="Número">${escapeHtml(p.numero)}</td>
         <td data-label="Ponto de referência">${escapeHtml(p.referencia)}</td>
@@ -396,7 +402,7 @@ function render(filterText){
         <table class="roster">
           <thead>
             <tr>
-              <th>Telefone</th><th>Nome</th><th>Data de participação</th><th>Rua</th><th>Número</th><th>Ponto de referência</th>
+              <th>Telefone</th><th>Nome</th><th>Data do cadastro</th><th>Rua</th><th>Número</th><th>Ponto de referência</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -489,7 +495,7 @@ function loadData(){
           rua: rua,
           numero: COLS.numero ? r[COLS.numero] : "",
           referencia: COLS.referencia ? r[COLS.referencia] : "",
-          data: dataStr,
+          data: onlyDate(dataStr),
           dataObj: dataObj
         });
       });
