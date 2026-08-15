@@ -18,6 +18,9 @@
     --gold:#C9932E;
     --moss:#4C6B54;
     --rust:#B4552B;
+    --novato-bg: rgba(196, 74, 74, 0.16);
+    --novato-bg-hover: rgba(196, 74, 74, 0.24);
+    --novato-text:#8A2E2E;
     --line: rgba(43,58,47,0.16);
     --shadow: 0 6px 16px rgba(43,58,47,0.10), 0 1px 3px rgba(43,58,47,0.08);
   }
@@ -68,7 +71,23 @@
     font-size:15px;
     max-width:560px;
     line-height:1.5;
+    margin-bottom:14px;
+  }
+  .legend{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
     margin-bottom:22px;
+  }
+  .legend .swatch{
+    width:12px;height:12px;
+    border-radius:3px;
+    background:var(--novato-bg);
+    border:1px solid rgba(196,74,74,0.4);
+    display:inline-block;
   }
   .searchbar{
     display:flex;
@@ -208,7 +227,29 @@
   table.roster tbody tr:hover{
     background:rgba(201,147,46,0.08);
   }
+  table.roster tbody tr.novato{
+    background:var(--novato-bg);
+  }
+  table.roster tbody tr.novato:hover{
+    background:var(--novato-bg-hover);
+  }
+  table.roster tbody tr.novato td{
+    color:var(--novato-text);
+  }
   .col-nome{font-family:'Inter',sans-serif; font-weight:500;}
+  .badge-novo{
+    display:inline-block;
+    margin-left:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    background:var(--novato-text);
+    color:#fff;
+    border-radius:20px;
+    padding:1px 7px;
+    vertical-align:middle;
+  }
 
   @media (max-width:640px){
     table.roster, table.roster thead, table.roster tbody, table.roster th, table.roster td, table.roster tr{
@@ -251,6 +292,7 @@
   <div class="eyebrow">Evangelismo Escola</div>
   <h1>Diretório por rua</h1>
   <p class="subtitle">Cada pessoa cadastrada, organizada pela rua informada no formulário — para facilitar a visita casa em casa.</p>
+  <div class="legend"><span class="swatch"></span> Em vermelho claro: cadastros do dia mais recente (novatos)</div>
   <div class="searchbar">
     <input type="text" id="search" placeholder="Buscar por nome ou telefone…">
   </div>
@@ -276,7 +318,8 @@ const FIELD_MATCHERS = {
   nome:      ["nome"],
   rua:       ["rua", "endereco"],
   numero:    ["numero"],
-  referencia:["referencia", "ponto de referencia"]
+  referencia:["referencia", "ponto de referencia"],
+  data:      ["carimbo", "timestamp", "data de cadastro"]
 };
 
 function normalize(str){
@@ -290,6 +333,30 @@ function findColumn(headers, keywords){
 function escapeHtml(str){
   return (str ?? "").toString()
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// Converte "dd/mm/aaaa hh:mm:ss" (formato de carimbo do Google Forms) em Date
+function parseTimestamp(str){
+  if(!str) return null;
+  const parts = str.trim().split(" ");
+  const datePart = parts[0];
+  const timePart = parts[1] || "";
+  if(!datePart) return null;
+  const [d, m, y] = datePart.split("/").map(Number);
+  if(!d || !m || !y) return null;
+  let hh = 0, mm = 0, ss = 0;
+  if(timePart){
+    const t = timePart.split(":").map(Number);
+    hh = t[0] || 0; mm = t[1] || 0; ss = t[2] || 0;
+  }
+  const dateObj = new Date(y, m - 1, d, hh, mm, ss);
+  return isNaN(dateObj.getTime()) ? null : dateObj;
+}
+
+// Retorna a data (sem hora) em milissegundos, para comparar dias
+function dayTime(dateObj){
+  if(!dateObj) return null;
+  return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
 }
 
 let DATA = { groups: {}, order: [] };
@@ -307,9 +374,10 @@ function render(filterText){
     if(!people.length) return "";
 
     const rows = people.map(p => `
-      <tr>
+      <tr class="${p.novato ? 'novato' : ''}">
         <td data-label="Telefone">${escapeHtml(p.telefone)}</td>
-        <td data-label="Nome" class="col-nome">${escapeHtml(p.nome)}</td>
+        <td data-label="Nome" class="col-nome">${escapeHtml(p.nome)}${p.novato ? '<span class="badge-novo">novo</span>' : ''}</td>
+        <td data-label="Data de participação">${escapeHtml(p.data)}</td>
         <td data-label="Rua">${escapeHtml(p.rua)}</td>
         <td data-label="Número">${escapeHtml(p.numero)}</td>
         <td data-label="Ponto de referência">${escapeHtml(p.referencia)}</td>
@@ -328,7 +396,7 @@ function render(filterText){
         <table class="roster">
           <thead>
             <tr>
-              <th>Telefone</th><th>Nome</th><th>Rua</th><th>Número</th><th>Ponto de referência</th>
+              <th>Telefone</th><th>Nome</th><th>Data de participação</th><th>Rua</th><th>Número</th><th>Ponto de referência</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -391,7 +459,8 @@ function loadData(){
         nome: findColumn(headers, FIELD_MATCHERS.nome),
         rua: findColumn(headers, FIELD_MATCHERS.rua),
         numero: findColumn(headers, FIELD_MATCHERS.numero),
-        referencia: findColumn(headers, FIELD_MATCHERS.referencia)
+        referencia: findColumn(headers, FIELD_MATCHERS.referencia),
+        data: findColumn(headers, FIELD_MATCHERS.data)
       };
 
       if(!COLS.rua){
@@ -402,17 +471,34 @@ function loadData(){
 
       const groups = {};
       const order = [];
+      let maxDay = null;
 
       rows.forEach(r=>{
         const rua = (r[COLS.rua] || "").trim();
         if(!rua) return;
         if(!groups[rua]){ groups[rua] = []; order.push(rua); }
+
+        const dataStr = COLS.data ? (r[COLS.data] || "") : "";
+        const dataObj = parseTimestamp(dataStr);
+        const dt = dayTime(dataObj);
+        if(dt !== null && (maxDay === null || dt > maxDay)) maxDay = dt;
+
         groups[rua].push({
           telefone: COLS.telefone ? r[COLS.telefone] : "",
           nome: COLS.nome ? r[COLS.nome] : "",
           rua: rua,
           numero: COLS.numero ? r[COLS.numero] : "",
-          referencia: COLS.referencia ? r[COLS.referencia] : ""
+          referencia: COLS.referencia ? r[COLS.referencia] : "",
+          data: dataStr,
+          dataObj: dataObj
+        });
+      });
+
+      // Marca como "novato" quem se cadastrou no dia mais recente encontrado na planilha
+      order.forEach(street=>{
+        groups[street].forEach(p=>{
+          const dt = dayTime(p.dataObj);
+          p.novato = (maxDay !== null && dt === maxDay);
         });
       });
 
